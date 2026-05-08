@@ -1,0 +1,40 @@
+# ========== Compilation Optimization Flags ==========
+# -march=native: Optimize for the current CPU architecture
+# -O2: Recommended optimization level, balancing performance and compile time
+# -pipe: Use pipes to speed up compilation
+COMMON_FLAGS="-march=native -O2 -pipe -flto=auto"
+CFLAGS="${COMMON_FLAGS}"    # C compiler flags
+CXXFLAGS="${COMMON_FLAGS}"  # C++ compiler flags
+FCFLAGS="${COMMON_FLAGS}"   # Fortran compiler flags
+FFLAGS="${COMMON_FLAGS}"    # Fortran 77 compiler flags
+
+# ========== Parallel Compilation Settings ==========
+# The number after -j = CPU thread count (run nproc to check)
+# Reduce if running low on memory (e.g., -j4)
+MAKEOPTS="-j16 -l14"
+
+# ========== Language & Localization ==========
+# LC_MESSAGES=C: Keep build output in English for easier searching
+LC_MESSAGES=C
+# L10N/LINGUAS: Supported languages (affects software translations and docs)
+L10N="en en-US"
+LINGUAS="en en_US"
+
+# ========== Mirror Configuration ==========
+# Use mirrorselect to pick the nearest mirror automatically
+# Official mirror list: https://www.gentoo.org/downloads/mirrors/
+
+# ========== USE Flags ==========
+# Others: dbus/policykit required for desktop, networkmanager for network management
+USE="-systemd lto udev dbus policykit networkmanager bluetooth git wayland pipewire screencast pulseaudio vulkan vaapi X -gnome -kde -gtk"
+
+# ========== License Configuration ==========
+# "*" accepts all licenses; "@FREE" accepts only free software
+ACCEPT_LICENSE="*"
+CPU_FLAGS_X86="aes avx avx2 bmi1 bmi2 f16c fma3 mmx mmxext pclmul popcnt rdrand sha sse sse2 sse3 sse4_1 sse4_2 sse4a ssse3 vpclmulqdq"
+
+VIDEO_CARDS="amdgpu radeonsi"
+
+LDFLAGS="-Wl,-O1 -Wl,--as-needed -flto=auto"
+EMERGE_DEFAULT_OPTS="--jobs=4 --load-average=14 --keep-going --with-bdeps=y"
+FEATURES="buildpkg binpkg-multi-instance parallel-fetch parallel-install candy"

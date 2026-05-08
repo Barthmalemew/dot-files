@@ -1,0 +1,9 @@
+# package.use# required by sys-kernel/gentoo-kernel-6.18.26::gentoo[initramfs]
+# required by virtual/dist-kernel-6.18.26::gentoo
+# required by sys-kernel/linux-firmware-20260309::gentoo[dist-kernel]
+# required by sys-kernel/genkernel-4.3.17-r4::gentoo[firmware]
+# required by sys-kernel/genkernel (argument)
+>=sys-kernel/installkernel-67 dracut
+# required by sys-boot/os-prober-1.82::gentoo
+# required by sys-boot/os-prober (argument)
+>=sys-boot/grub-2.14-r5 mount

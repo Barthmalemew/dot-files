@@ -1,0 +1,5 @@
+sys-devel/gcc       pgo
+sys-devel/binutils  pgo
+dev-lang/python     pgo lto
+app-arch/xz-utils   pgo
+app-shells/bash     pgo

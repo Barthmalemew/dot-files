@@ -1,0 +1,15 @@
+*.swp
+*.swo
+*~
+.DS_Store
+
+.ssh/
+.gnupg/
+.config/github-copilot/
+.config/BraveSoftware/
+.config/obsidian/
+.config/pulse/
+.cache/
+.local/share/
+.local/state/
+

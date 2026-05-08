@@ -1,0 +1,3 @@
+# Laptop-only additions go here after the laptop hardware is known.
+# Likely categories: extra firmware, laptop-specific Quickshell helpers,
+# power management, input, suspend/resume, and hardware monitoring tools.
