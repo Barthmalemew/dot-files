@@ -198,6 +198,7 @@ run_portage_step() {
   copy_tree "$repo_dir/portage/common/package.accept_keywords" /etc/portage/package.accept_keywords
   copy_tree "$repo_dir/portage/common/package.license" /etc/portage/package.license
   copy_tree "$repo_dir/portage/common/repos.conf" /etc/portage/repos.conf
+  copy_tree "$repo_dir/portage/common/binrepos.conf" /etc/portage/binrepos.conf
   copy_tree "$repo_dir/portage/common/env" /etc/portage/env
 
   if [ -f "$repo_dir/portage/common/package.env" ]; then

@@ -10,6 +10,7 @@ Do not commit these categories:
 - Pulse/PipeWire cookies and runtime state.
 - Logs, caches, lock files, generated package build output.
 - UUID-bound boot/storage configuration such as `fstab`, initramfs command lines, and dracut root UUIDs.
+- Monitor/output placement, resolution, refresh rate, and per-display layout files.
 
 Host-bound values belong under `hosts/<host>/`, `packages/<host>.txt`,
 `openrc/hosts/<host>/services.txt`, or `portage/hosts/<host>/`.

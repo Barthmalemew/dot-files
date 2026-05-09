@@ -226,7 +226,7 @@ Scope {
 
         delegate: PanelWindow {
             required property var modelData
-            readonly property bool isMainDisplay: modelData.name === "DP-1"
+            readonly property bool isMainDisplay: Quickshell.screens.length > 0 && modelData.name === Quickshell.screens[0].name
 
             screen: modelData
             focusable: true

@@ -9,11 +9,12 @@ fi
 
 mmsg -s -d "viewcrossmon,$tag,$monitor"
 
-case "$monitor" in
-    DP-1)
-        qs ipc call workspaceOverlay showDp1
-        ;;
-    DP-2)
-        qs ipc call workspaceOverlay showDp2
-        ;;
-esac
+# Desktop-only output-name hooks, disabled for shared use:
+# case "$monitor" in
+#     DP-1)
+#         qs ipc call workspaceOverlay showDp1
+#         ;;
+#     DP-2)
+#         qs ipc call workspaceOverlay showDp2
+#         ;;
+# esac

@@ -20,17 +20,18 @@ Scope {
     readonly property color fg:       theme.fgOnAccent
 
     function monitorMinTag(monitorName) {
-        if (monitorName === "DP-2")
-            return 8
-
+        // Desktop-only split, disabled for shared use:
+        // if (monitorName === "DP-2")
+        //     return 8
         return 1
     }
 
     function monitorMaxTag(monitorName) {
-        if (monitorName === "DP-2")
-            return 9
-
-        return 7
+        // Desktop-only split, disabled for shared use:
+        // if (monitorName === "DP-2")
+        //     return 9
+        // return 7
+        return 9
     }
 
     function showOverlay(monitorName) {
@@ -102,10 +103,14 @@ Scope {
     }
 
     function monitorForTag(id) {
-        if (id >= root.monitorMinTag("DP-2") && id <= root.monitorMaxTag("DP-2"))
-            return "DP-2"
+        // Desktop-only output mapping, disabled for shared use:
+        // if (id >= root.monitorMinTag("DP-2") && id <= root.monitorMaxTag("DP-2"))
+        //     return "DP-2"
+        // return "DP-1"
+        if (Quickshell.screens.length > 0)
+            return Quickshell.screens[0].name
 
-        return "DP-1"
+        return ""
     }
 
     function parseTagLine(parts) {

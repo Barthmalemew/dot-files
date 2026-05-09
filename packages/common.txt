@@ -11,6 +11,7 @@ dev-lang/python
 dev-util/codex
 dev-util/tree-sitter-cli
 dev-vcs/git
+gnome-base/gvfs
 gui-apps/grim
 gui-apps/qt6ct
 gui-apps/quickshell
@@ -38,6 +39,7 @@ sys-boot/grub:2
 sys-boot/os-prober
 sys-devel/gcc
 sys-fs/exfatprogs
+sys-fs/fuse-exfat
 sys-fs/ntfs3g
 sys-fs/udisks
 sys-kernel/dracut

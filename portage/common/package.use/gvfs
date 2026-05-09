@@ -1,0 +1,2 @@
+gnome-base/gvfs udisks policykit elogind udev -cdda -cdr -http -fuse -gnome-online-accounts -google -gphoto2 -ios -keyring -mtp
+  -nfs -onedrive -samba -systemd -zeroconf

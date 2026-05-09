@@ -87,12 +87,18 @@ Scope {
     IpcHandler {
         target: "workspaceOverlay"
 
-        function showDp1() {
-            workspaceOverlay.showOverlay("DP-1")
-        }
+        // Desktop-only output-name IPC, disabled for shared use:
+        // function showDp1() {
+        //     workspaceOverlay.showOverlay("DP-1")
+        // }
+        //
+        // function showDp2() {
+        //     workspaceOverlay.showOverlay("DP-2")
+        // }
 
-        function showDp2() {
-            workspaceOverlay.showOverlay("DP-2")
+        function showPrimary() {
+            if (Quickshell.screens.length > 0)
+                workspaceOverlay.showOverlay(Quickshell.screens[0].name)
         }
     }
 }

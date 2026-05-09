@@ -41,4 +41,5 @@ firmware, Quickshell pieces, and host-specific Portage config later.
 
 Do not commit SSH private keys, Wi-Fi secrets, browser state, Obsidian runtime
 files, Copilot tokens, Pulse cookies, logs, caches, or UUID-bound boot/storage
-configuration.
+configuration. Drive-specific setup and monitor/output layout are intentionally
+left out of the shared setup because they are desktop-only.
