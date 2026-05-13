@@ -1,0 +1,5 @@
+# Seconds between AC/battery profile checks.
+laptop_power_profile_interval="30"
+
+# Battery percentage below which the platform profile switches to low-power.
+laptop_power_profile_low_threshold="25"

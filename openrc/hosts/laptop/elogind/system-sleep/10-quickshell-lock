@@ -1,0 +1,8 @@
+#!/bin/sh
+
+case "$1" in
+    pre)
+        qs ipc call lockScreen lock >/dev/null 2>&1 || true
+        sleep 0.3
+        ;;
+esac

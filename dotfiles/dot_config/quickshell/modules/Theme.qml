@@ -28,4 +28,10 @@ QtObject {
 
     // Text on strong accent backgrounds
     readonly property color fgOnAccent: bg0
+
+    // Shared shape tokens
+    readonly property int radiusSm: 8
+    readonly property int radiusMd: 12
+    readonly property int radiusLg: 16
+    readonly property int radiusXl: 18
 }

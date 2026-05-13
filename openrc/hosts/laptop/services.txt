@@ -13,6 +13,7 @@ hostname boot
 hwclock boot
 keymaps boot
 killprocs shutdown
+laptop-power-profile default
 kmod-static-nodes sysinit
 local default
 local nonetwork

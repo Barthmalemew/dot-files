@@ -165,19 +165,36 @@ Scope {
                             Rectangle {
                                 id: clearButton
 
-                                width: 70
+                                width: 104
                                 height: parent.height
                                 radius: 9
                                 color: clearMouse.containsMouse ? root.accent : root.bg2
                                 opacity: notificationServer.trackedNotifications.values.length > 0 ? 1.0 : 0.45
 
-                                Text {
+                                Row {
                                     anchors.centerIn: parent
+                                    height: parent.height
+                                    spacing: 6
 
-                                    text: "Clear"
-                                    color: clearMouse.containsMouse ? theme.fgOnAccent : root.fg
-                                    font.pixelSize: 13
-                                    font.bold: clearMouse.containsMouse
+                                    Text {
+                                        height: parent.height
+
+                                        text: "󰆴"
+                                        color: clearMouse.containsMouse ? theme.fgOnAccent : root.fg
+                                        font.family: "Symbols Nerd Font"
+                                        font.pixelSize: 15
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+
+                                    Text {
+                                        height: parent.height
+
+                                        text: "Clear all"
+                                        color: clearMouse.containsMouse ? theme.fgOnAccent : root.fg
+                                        font.pixelSize: 13
+                                        font.bold: clearMouse.containsMouse
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
                                 }
 
                                 MouseArea {
@@ -202,10 +219,10 @@ Scope {
                                 Text {
                                     anchors.centerIn: parent
 
-                                    text: "x"
+                                    text: "󰅖"
                                     color: closeMouse.containsMouse ? theme.fgOnAccent : root.fg
-                                    font.pixelSize: 16
-                                    font.bold: true
+                                    font.family: "Symbols Nerd Font"
+                                    font.pixelSize: 18
                                 }
 
                                 MouseArea {
@@ -364,10 +381,10 @@ Scope {
                                         Text {
                                             anchors.centerIn: parent
 
-                                            text: "x"
+                                            text: "󰅖"
                                             color: dismissMouse.containsMouse ? theme.fgOnAccent : root.muted
-                                            font.pixelSize: 14
-                                            font.bold: true
+                                            font.family: "Symbols Nerd Font"
+                                            font.pixelSize: 16
                                         }
 
                                         MouseArea {

@@ -1,0 +1,15 @@
+#!/sbin/openrc-run
+
+description="Laptop AC/battery platform profile watcher"
+command="/usr/local/sbin/laptop-power-profile-watch"
+command_background="yes"
+pidfile="/run/laptop-power-profile.pid"
+output_log="/var/log/laptop-power-profile.log"
+error_log="/var/log/laptop-power-profile.log"
+
+command_args="${laptop_power_profile_interval:-30} ${laptop_power_profile_low_threshold:-25}"
+
+depend() {
+  need localmount
+  after tlp
+}

@@ -310,6 +310,21 @@ run_openrc_step() {
       install_host_file "$src" "/etc/greetd/${src##*/}" 644
     done
   fi
+  if [ -d "$repo_dir/openrc/hosts/$host/sbin" ]; then
+    find "$repo_dir/openrc/hosts/$host/sbin" -type f | sort | while IFS= read -r src; do
+      install_host_file "$src" "/usr/local/sbin/${src##*/}" 755
+    done
+  fi
+  if [ -d "$repo_dir/openrc/hosts/$host/elogind/logind.conf.d" ]; then
+    find "$repo_dir/openrc/hosts/$host/elogind/logind.conf.d" -type f | sort | while IFS= read -r src; do
+      install_host_file "$src" "/etc/elogind/logind.conf.d/${src##*/}" 644
+    done
+  fi
+  if [ -d "$repo_dir/openrc/hosts/$host/elogind/system-sleep" ]; then
+    find "$repo_dir/openrc/hosts/$host/elogind/system-sleep" -type f | sort | while IFS= read -r src; do
+      install_host_file "$src" "/etc/elogind/system-sleep/${src##*/}" 755
+    done
+  fi
 
   while read -r service runlevel; do
     [ -z "${service:-}" ] && continue

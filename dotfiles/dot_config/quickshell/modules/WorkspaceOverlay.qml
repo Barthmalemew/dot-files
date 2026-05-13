@@ -284,7 +284,7 @@ Scope {
             Rectangle {
                 anchors.fill: parent
                 color: theme.dimBg
-                opacity: root.dimVisible(monitorName) ? 1.0 : 0.0
+                opacity: root.dimVisible(monitorName) ? 0.38 : 0.0
 
                 Behavior on opacity {
                     NumberAnimation {

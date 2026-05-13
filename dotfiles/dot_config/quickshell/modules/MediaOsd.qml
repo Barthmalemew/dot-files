@@ -8,6 +8,7 @@ Scope {
 
     property bool osdVisible: false
     property string title: "Volume"
+    property string titleSymbol: "󰕾"
     property string valueText: "--%"
     property int percent: -1
     property color tone: theme.primary
@@ -20,8 +21,9 @@ Scope {
         return Math.max(0, Math.min(100, Math.round(Number(value))))
     }
 
-    function show(titleText, value, mutedState) {
+    function show(titleText, symbolText, value, mutedState) {
         title = titleText
+        titleSymbol = symbolText
 
         if (mutedState) {
             valueText = "Muted"
@@ -38,11 +40,37 @@ Scope {
     }
 
     function showVolume(value, mutedState) {
-        show("Volume", value, mutedState)
+        show("Volume", mutedState ? "󰝟" : "󰕾", value, mutedState)
     }
 
     function showBrightness(value) {
-        show("Brightness", value, false)
+        show("Brightness", "󰃠", value, false)
+    }
+
+    function showNightMode(state) {
+        title = "Night mode"
+        titleSymbol = "󰖔"
+
+        if (state === "on") {
+            valueText = "On"
+            percent = 100
+            tone = theme.primary
+        } else if (state === "off") {
+            valueText = "Off"
+            percent = 0
+            tone = theme.gray
+        } else if (state === "missing") {
+            valueText = "Missing"
+            percent = 0
+            tone = theme.danger
+        } else {
+            valueText = "Failed"
+            percent = 0
+            tone = theme.danger
+        }
+
+        osdVisible = true
+        hideTimer.restart()
     }
 
     Timer {
@@ -118,7 +146,19 @@ Scope {
                         spacing: 10
 
                         Text {
-                            width: parent.width - value.width - parent.spacing
+                            width: 22
+                            height: parent.height
+
+                            text: root.titleSymbol
+                            color: root.tone
+                            font.family: "Symbols Nerd Font"
+                            font.pixelSize: 18
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        Text {
+                            width: parent.width - 22 - value.width - parent.spacing * 2
                             height: parent.height
 
                             text: root.title

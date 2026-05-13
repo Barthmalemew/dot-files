@@ -27,7 +27,16 @@ the desktop unless the desktop independently needs them.
   `media-plugins/alsa-plugins`, `net-wireless/bluez`, `app-misc/brightnessctl`,
   `sys-power/tlp`, `sys-power/upower`, `sys-power/powertop`,
   `sys-apps/lm-sensors`, and `sys-apps/smartmontools`.
-- OpenRC laptop services add `bluetooth default` and `tlp default`.
+- OpenRC laptop services add `bluetooth default`, `tlp default`, and
+  `laptop-power-profile default`.
+- TLP remains the laptop power-management backend. `power-profiles-daemon` and
+  battery charge caps are intentionally not configured.
+- `laptop-power-profile` writes `/sys/firmware/acpi/platform_profile`:
+  plugged in uses `performance`, battery at 25% or above uses `balanced`, and
+  battery below 25% uses `low-power`.
+- elogind handles lid close as suspend. A best-effort pre-suspend hook calls
+  `qs ipc call lockScreen lock` and allows suspend to continue if Quickshell
+  IPC is unavailable.
 - `portage/hosts/laptop/make.conf.example` sets `VIDEO_CARDS="intel"` and
   `INPUT_DEVICES="libinput"` for this laptop.
 - `portage/hosts/laptop/package.use/00cpu-flags` captures the Lunar Lake CPU
@@ -45,10 +54,15 @@ These should stay identical between laptop and desktop unless there is a clear
 host-specific reason to split them.
 
 - Common package atoms live in `packages/common.txt`.
+- Shared package atoms include manual night mode support
+  (`x11-misc/gammastep`) and desktop parity apps such as
+  `net-im/vesktop-bin::guru`.
 - Shared Mango behavior lives under `dotfiles/dot_config/mango/`, with
   host-specific monitor placement kept as explicit monitor rules.
 - Quickshell modules and scripts are shared; media keys call the shared
   `volume-control.sh` and `brightness-control.sh` helpers.
+- Manual night mode is shared and toggled with `SUPER+SHIFT+O`; it applies a
+  fixed warm `3900K` temperature until toggled off.
 - PipeWire, WirePlumber, and PipeWire Pulse are started as OpenRC user services
   from Mango so Quickshell, pavucontrol, and the session see the same audio
   server.
@@ -110,6 +124,7 @@ rc-service NetworkManager restart
 rc-service sysklogd start
 rc-service bluetooth start
 rc-service tlp start
+rc-service laptop-power-profile start
 rc-service greetd start
 rc-status -a
 ```

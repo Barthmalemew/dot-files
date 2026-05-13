@@ -27,6 +27,7 @@ media-fonts/ibm-plex
 media-sound/pavucontrol
 media-video/pipewire
 media-video/wireplumber
+net-im/vesktop-bin::guru
 net-libs/nodejs
 net-misc/chrony
 net-misc/curl
@@ -50,5 +51,6 @@ sys-kernel/linux-firmware
 sys-process/htop
 www-client/brave-browser-nightly::another-brave-overlay
 x11-misc/pcmanfm-qt
+x11-misc/gammastep
 x11-misc/rofi
 x11-terms/kitty

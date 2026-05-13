@@ -74,6 +74,10 @@ Scope {
         function showBrightness(value: string) {
             osd.showBrightness(value)
         }
+
+        function showNightMode(state: string) {
+            osd.showNightMode(state)
+        }
     }
 
     IpcHandler {

@@ -34,6 +34,7 @@ Scope {
     onQueryChanged: refilter()
 
     component StatusCell: Rectangle {
+        required property string symbol
         required property string title
         required property string value
         property int percent: -1
@@ -41,45 +42,59 @@ Scope {
 
         width: (parent.width - parent.spacing * 2) / 3
         height: (parent.height - parent.spacing) / 2
-        radius: 8
-        color: theme.subtleButton
+        radius: theme.radiusSm
+        color: root.bg2
         border.width: 1
-        border.color: theme.separator
+        border.color: theme.border
 
         Text {
-            id: titleText
+            id: symbolText
 
             anchors.left: parent.left
-            anchors.leftMargin: 12
-            anchors.right: parent.right
-            anchors.rightMargin: 12
-            anchors.top: parent.top
-            anchors.topMargin: 7
+            anchors.leftMargin: 14
+            y: parent.percent >= 0 ? 11 : Math.round((parent.height - height) / 2)
+            width: 24
+            height: 28
 
-            text: parent.title
-            color: root.muted
-            font.pixelSize: 10
-            font.bold: true
-            font.capitalization: Font.AllUppercase
+            text: parent.symbol
+            color: parent.tone
+            font.family: "Symbols Nerd Font"
+            font.pixelSize: 20
             horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        Text {
+            id: valueText
+
+            anchors.right: parent.right
+            anchors.rightMargin: 14
+            y: parent.percent >= 0 ? 9 : Math.round((parent.height - height) / 2)
+            width: Math.min(104, Math.max(52, implicitWidth))
+            height: 30
+
+            text: parent.value
+            color: root.fg
+            font.pixelSize: 22
+            font.bold: true
+            horizontalAlignment: Text.AlignRight
+            verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
 
         Text {
-            anchors.left: parent.left
-            anchors.leftMargin: 10
-            anchors.right: parent.right
+            anchors.left: symbolText.right
+            anchors.leftMargin: 9
+            anchors.right: valueText.left
             anchors.rightMargin: 10
-            anchors.top: titleText.bottom
-            anchors.topMargin: 1
-            anchors.bottom: meter.top
-            anchors.bottomMargin: 3
+            y: parent.percent >= 0 ? 10 : Math.round((parent.height - height) / 2)
+            height: 28
 
-            text: parent.value
-            color: root.fg
-            font.pixelSize: 15
+            text: parent.title
+            color: root.muted
+            font.pixelSize: 14
             font.bold: true
-            horizontalAlignment: Text.AlignHCenter
+            font.capitalization: Font.AllUppercase
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
@@ -88,22 +103,23 @@ Scope {
             id: meter
 
             anchors.left: parent.left
-            anchors.leftMargin: 12
+            anchors.leftMargin: 14
             anchors.right: parent.right
-            anchors.rightMargin: 12
+            anchors.rightMargin: 14
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 7
+            anchors.bottomMargin: 8
 
-            height: 3
-            radius: 2
+            height: 7
+            radius: 4
             visible: parent.percent >= 0
-            color: theme.separator
+            color: theme.subtleButton
 
             Rectangle {
                 width: parent.width * Math.max(0, Math.min(100, parent.parent.percent)) / 100
                 height: parent.height
                 radius: parent.radius
                 color: parent.parent.tone
+                opacity: 0.82
             }
         }
     }
@@ -134,7 +150,16 @@ Scope {
             return a.name.localeCompare(b.name)
         })
 
-        allApps = apps
+        var entries = []
+
+        for (var i = 0; i < apps.length; i++) {
+            entries.push({
+                app: apps[i],
+                searchText: searchTextFor(apps[i])
+            })
+        }
+
+        allApps = entries
         refilter()
     }
 
@@ -214,10 +239,10 @@ Scope {
         var next = []
 
         for (var i = 0; i < allApps.length; i++) {
-            var app = allApps[i]
+            var entry = allApps[i]
 
-            if (q.length === 0 || searchTextFor(app).indexOf(q) !== -1)
-                next.push(app)
+            if (q.length === 0 || entry.searchText.indexOf(q) !== -1)
+                next.push(entry)
         }
 
         filteredApps = next
@@ -245,7 +270,7 @@ Scope {
         if (i >= filteredApps.length)
             i = filteredApps.length - 1
 
-        var app = filteredApps[i]
+        var app = filteredApps[i].app
 
         if (app.runInTerminal) {
             Quickshell.execDetached({
@@ -379,7 +404,7 @@ Scope {
 
     Process {
         id: statsPoller
-        command: ["sh", "-c", "cat /proc/stat /proc/meminfo"]
+        command: ["cat", "/proc/stat", "/proc/meminfo"]
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -499,9 +524,9 @@ Scope {
 
                 anchors.centerIn: parent
 
-                width: 620
-                height: 530
-                radius: 18
+                width: Math.min(760, Math.max(280, parent.width - 32))
+                height: Math.min(640, Math.max(360, parent.height - 32))
+                radius: theme.radiusXl
                 color: root.bg
                 border.width: 1
                 border.color: theme.border
@@ -512,37 +537,72 @@ Scope {
 
                 Column {
                     anchors.fill: parent
-                    anchors.margins: 18
-                    spacing: 14
+                    anchors.margins: 22
+                    spacing: 16
+
+                    Row {
+                        width: parent.width
+                        height: 34
+                        spacing: 12
+
+                        Text {
+                            width: parent.width - appCount.width - parent.spacing
+                            height: parent.height
+
+                            text: "Applications"
+                            color: root.fg
+                            font.pixelSize: 22
+                            font.bold: true
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            id: appCount
+
+                            width: Math.max(72, implicitWidth)
+                            height: parent.height
+
+                            text: root.filteredApps.length + " apps"
+                            color: root.muted
+                            font.pixelSize: 14
+                            font.bold: true
+                            horizontalAlignment: Text.AlignRight
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
+                    }
 
                     Grid {
                         width: parent.width
-                        height: 94
+                        height: 132
                         columns: 3
                         rows: 2
-                        spacing: 10
+                        spacing: 12
 
                         StatusCell {
+                            symbol: "󰥔"
                             title: "Time"
                             value: root.clockText
                             tone: root.accent
                         }
 
                         StatusCell {
+                            symbol: "󰍛"
                             title: "CPU"
                             value: root.percentText(root.cpuUsage)
-                            percent: root.cpuUsage
                             tone: theme.info
                         }
 
                         StatusCell {
+                            symbol: "󰘚"
                             title: "Memory"
                             value: root.percentText(root.memoryUsage)
-                            percent: root.memoryUsage
                             tone: theme.success
                         }
 
                         StatusCell {
+                            symbol: "󰁹"
                             title: "Battery"
                             value: root.batteryValue()
                             percent: root.batteryPercent
@@ -550,6 +610,7 @@ Scope {
                         }
 
                         StatusCell {
+                            symbol: root.volumeMuted ? "󰝟" : "󰕾"
                             title: "Volume"
                             value: root.volumeValue()
                             percent: root.volumeMuted ? 0 : root.volumePercent
@@ -557,6 +618,7 @@ Scope {
                         }
 
                         StatusCell {
+                            symbol: "󰃠"
                             title: "Brightness"
                             value: root.percentText(root.brightnessPercent)
                             percent: root.brightnessPercent
@@ -566,16 +628,36 @@ Scope {
 
                     Rectangle {
                         width: parent.width
-                        height: 48
-                        radius: 12
-                        color: root.bg2
+                        height: 58
+                        radius: theme.radiusMd
+                        color: theme.inputBg
+                        border.width: 1
+                        border.color: searchText.activeFocus ? root.accent : theme.border
+
+                        Text {
+                            id: searchIcon
+
+                            anchors.left: parent.left
+                            anchors.leftMargin: 16
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            width: 24
+                            height: 28
+
+                            text: "󰍉"
+                            color: searchText.activeFocus ? root.accent : root.muted
+                            font.family: "Symbols Nerd Font"
+                            font.pixelSize: 18
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
 
                         TextInput {
                             id: searchText
 
                             anchors.fill: parent
-                            anchors.leftMargin: 16
-                            anchors.rightMargin: 16
+                            anchors.leftMargin: 50
+                            anchors.rightMargin: 18
 
                             verticalAlignment: TextInput.AlignVCenter
 
@@ -584,7 +666,7 @@ Scope {
                             selectedTextColor: root.bg
 
                             text: root.query
-                            font.pixelSize: 18
+                            font.pixelSize: 20
                             clip: true
                             focus: root.launcherVisible
 
@@ -621,15 +703,15 @@ Scope {
                         }
 
                         Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 16
+                            anchors.left: searchIcon.right
+                            anchors.leftMargin: 10
                             anchors.verticalCenter: parent.verticalCenter
 
                             visible: searchText.text.length === 0
 
                             text: "Search apps..."
                             color: root.muted
-                            font.pixelSize: 18
+                            font.pixelSize: 20
                         }
                     }
 
@@ -656,7 +738,7 @@ Scope {
                         id: list
 
                         width: parent.width
-                        height: parent.height - 192
+                        height: parent.height - 34 - 132 - 58 - 1 - parent.spacing * 4
                         clip: true
                         visible: root.filteredApps.length > 0
 
@@ -668,10 +750,24 @@ Scope {
                             required property var modelData
 
                             width: list.width
-                            height: 48
-                            radius: 10
+                            height: 58
+                            radius: theme.radiusMd
+                            border.width: index === root.selectedIndex ? 1 : 0
+                            border.color: root.accent
 
-                            color: index === root.selectedIndex ? root.accent : "transparent"
+                            color: index === root.selectedIndex ? theme.hoverSurface : appMouse.containsMouse ? theme.subtleButton : "transparent"
+
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 2
+                                anchors.verticalCenter: parent.verticalCenter
+
+                                width: 3
+                                height: 30
+                                radius: 2
+                                visible: index === root.selectedIndex
+                                color: root.accent
+                            }
 
                             IconImage {
                                 id: icon
@@ -680,25 +776,43 @@ Scope {
                                 anchors.leftMargin: 12
                                 anchors.verticalCenter: parent.verticalCenter
 
-                                implicitSize: 28
-                                source: Quickshell.iconPath(modelData.icon, "application-x-executable")
+                                implicitSize: 34
+                                source: Quickshell.iconPath(modelData.app.icon, "application-x-executable")
                             }
 
                             Text {
+                                id: appName
+
                                 anchors.left: icon.right
                                 anchors.leftMargin: 12
                                 anchors.right: parent.right
                                 anchors.rightMargin: 14
-                                anchors.verticalCenter: parent.verticalCenter
+                                y: modelData.app.genericName ? 8 : Math.round((parent.height - height) / 2)
 
-                                text: modelData.name
-                                color: index === root.selectedIndex ? theme.fgOnAccent : root.fg
-                                font.pixelSize: 16
+                                text: modelData.app.name
+                                color: root.fg
+                                font.pixelSize: 18
                                 font.bold: index === root.selectedIndex
                                 elide: Text.ElideRight
                             }
 
+                            Text {
+                                anchors.left: appName.left
+                                anchors.right: appName.right
+                                anchors.top: appName.bottom
+                                anchors.topMargin: 2
+
+                                visible: !!modelData.app.genericName
+
+                                text: modelData.app.genericName || ""
+                                color: index === root.selectedIndex ? root.accent : root.muted
+                                font.pixelSize: 13
+                                elide: Text.ElideRight
+                            }
+
                             MouseArea {
+                                id: appMouse
+
                                 anchors.fill: parent
                                 hoverEnabled: true
 
