@@ -16,8 +16,14 @@ Scope {
     property string clockText: ""
     property int cpuUsage: 0
     property int memoryUsage: 0
+    property int batteryPercent: -1
+    property string batteryState: ""
+    property int volumePercent: -1
+    property bool volumeMuted: false
+    property int brightnessPercent: -1
     property double previousCpuTotal: 0
     property double previousCpuIdle: 0
+    property string statusScript: Qt.resolvedUrl("../scripts/launcher-status.sh").toString().replace("file://", "")
 
     readonly property color accent: theme.primary
     readonly property color bg:     theme.panelBg
@@ -26,6 +32,81 @@ Scope {
     readonly property color muted:  theme.gray
 
     onQueryChanged: refilter()
+
+    component StatusCell: Rectangle {
+        required property string title
+        required property string value
+        property int percent: -1
+        property color tone: root.accent
+
+        width: (parent.width - parent.spacing * 2) / 3
+        height: (parent.height - parent.spacing) / 2
+        radius: 8
+        color: theme.subtleButton
+        border.width: 1
+        border.color: theme.separator
+
+        Text {
+            id: titleText
+
+            anchors.left: parent.left
+            anchors.leftMargin: 12
+            anchors.right: parent.right
+            anchors.rightMargin: 12
+            anchors.top: parent.top
+            anchors.topMargin: 7
+
+            text: parent.title
+            color: root.muted
+            font.pixelSize: 10
+            font.bold: true
+            font.capitalization: Font.AllUppercase
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+        }
+
+        Text {
+            anchors.left: parent.left
+            anchors.leftMargin: 10
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            anchors.top: titleText.bottom
+            anchors.topMargin: 1
+            anchors.bottom: meter.top
+            anchors.bottomMargin: 3
+
+            text: parent.value
+            color: root.fg
+            font.pixelSize: 15
+            font.bold: true
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+        }
+
+        Rectangle {
+            id: meter
+
+            anchors.left: parent.left
+            anchors.leftMargin: 12
+            anchors.right: parent.right
+            anchors.rightMargin: 12
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 7
+
+            height: 3
+            radius: 2
+            visible: parent.percent >= 0
+            color: theme.separator
+
+            Rectangle {
+                width: parent.width * Math.max(0, Math.min(100, parent.parent.percent)) / 100
+                height: parent.height
+                radius: parent.radius
+                color: parent.parent.tone
+            }
+        }
+    }
 
     function toggle() {
         if (launcherVisible)
@@ -47,7 +128,7 @@ Scope {
     }
 
     function reloadApps() {
-        var apps = DesktopEntries.applications.values.slice()
+        var apps = dedupeApps(DesktopEntries.applications.values.slice())
 
         apps.sort(function(a, b) {
             return a.name.localeCompare(b.name)
@@ -55,6 +136,66 @@ Scope {
 
         allApps = apps
         refilter()
+    }
+
+    function normalizedExecFor(app) {
+        var exec = app.execString || ""
+
+        if (exec.length === 0 && app.command)
+            exec = commandArray(app.command).join(" ")
+
+        return exec
+            .replace(/--password-store=[^ ]+/g, "")
+            .replace(/%[fFuUdDnNickvm]/g, "")
+            .replace(/\s+/g, " ")
+            .trim()
+    }
+
+    function appDedupeKey(app) {
+        return [
+            app.name || "",
+            app.genericName || "",
+            normalizedExecFor(app)
+        ].join("\u0000").toLowerCase()
+    }
+
+    function preferApp(candidate, current) {
+        var candidateExec = candidate.execString || ""
+        var currentExec = current.execString || ""
+
+        if (candidateExec.indexOf("--password-store=basic") !== -1 &&
+            currentExec.indexOf("--password-store=basic") === -1)
+            return true
+
+        return false
+    }
+
+    function dedupeApps(apps) {
+        var byKey = {}
+        var order = []
+
+        for (var i = 0; i < apps.length; i++) {
+            var app = apps[i]
+
+            if (app.noDisplay || app.hidden)
+                continue
+
+            var key = appDedupeKey(app)
+
+            if (!byKey[key]) {
+                byKey[key] = app
+                order.push(key)
+            } else if (preferApp(app, byKey[key])) {
+                byKey[key] = app
+            }
+        }
+
+        var next = []
+
+        for (var j = 0; j < order.length; j++)
+            next.push(byKey[order[j]])
+
+        return next
     }
 
     function searchTextFor(app) {
@@ -169,6 +310,60 @@ Scope {
             memoryUsage = clampPercent((1 - memAvailable / memTotal) * 100)
     }
 
+    function parseSystemStatus(text) {
+        var lines = (text || "").split("\n")
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim()
+            var split = line.indexOf("=")
+
+            if (split < 0)
+                continue
+
+            var key = line.slice(0, split)
+            var value = line.slice(split + 1)
+
+            if (key === "BAT") {
+                batteryPercent = value === "" ? -1 : clampPercent(parseInt(value))
+            } else if (key === "BAT_STATE") {
+                batteryState = value
+            } else if (key === "VOL") {
+                volumePercent = value === "" ? -1 : clampPercent(parseInt(value))
+            } else if (key === "VOL_MUTED") {
+                volumeMuted = value === "1"
+            } else if (key === "BRI") {
+                brightnessPercent = value === "" ? -1 : clampPercent(parseInt(value))
+            }
+        }
+    }
+
+    function percentText(value) {
+        return value < 0 ? "--%" : value + "%"
+    }
+
+    function batteryValue() {
+        if (batteryPercent < 0)
+            return "AC"
+
+        if (batteryState === "fully-charged")
+            return "Full"
+
+        if (batteryState === "charging")
+            return percentText(batteryPercent) + " chg"
+
+        return percentText(batteryPercent)
+    }
+
+    function volumeValue() {
+        if (volumePercent < 0)
+            return "No sink"
+
+        if (volumeMuted)
+            return "Muted"
+
+        return percentText(volumePercent)
+    }
+
     Component.onCompleted: {
         updateClock()
         reloadApps()
@@ -200,6 +395,24 @@ Scope {
         }
     }
 
+    Process {
+        id: systemStatusPoller
+        command: ["sh", root.statusScript]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.parseSystemStatus(this.text)
+            }
+        }
+
+        stderr: StdioCollector {
+            onStreamFinished: {
+                if (this.text.trim() !== "")
+                    console.warn("launcher system status error:", this.text)
+            }
+        }
+    }
+
     Timer {
         interval: 1000
         running: true
@@ -218,6 +431,9 @@ Scope {
         onTriggered: {
             if (!statsPoller.running)
                 statsPoller.running = true
+
+            if (!systemStatusPoller.running)
+                systemStatusPoller.running = true
         }
     }
 
@@ -299,72 +515,52 @@ Scope {
                     anchors.margins: 18
                     spacing: 14
 
-                    Row {
+                    Grid {
                         width: parent.width
-                        height: 42
+                        height: 94
+                        columns: 3
+                        rows: 2
                         spacing: 10
 
-                        Rectangle {
-                            width: (parent.width - parent.spacing * 2) / 3
-                            height: parent.height
-                            radius: 12
-                            color: root.bg2
-
-                            Text {
-                                anchors.fill: parent
-                                anchors.leftMargin: 14
-                                anchors.rightMargin: 14
-
-                                text: root.clockText
-                                color: root.fg
-                                font.pixelSize: 18
-                                font.bold: true
-                                horizontalAlignment: Text.AlignLeft
-                                verticalAlignment: Text.AlignVCenter
-                                elide: Text.ElideRight
-                            }
+                        StatusCell {
+                            title: "Time"
+                            value: root.clockText
+                            tone: root.accent
                         }
 
-                        Rectangle {
-                            width: (parent.width - parent.spacing * 2) / 3
-                            height: parent.height
-                            radius: 12
-                            color: theme.subtleButton
-
-                            Text {
-                                anchors.fill: parent
-                                anchors.leftMargin: 12
-                                anchors.rightMargin: 12
-
-                                text: "CPU " + root.cpuUsage + "%"
-                                color: root.fg
-                                font.pixelSize: 14
-                                font.bold: true
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                                elide: Text.ElideRight
-                            }
+                        StatusCell {
+                            title: "CPU"
+                            value: root.percentText(root.cpuUsage)
+                            percent: root.cpuUsage
+                            tone: theme.info
                         }
 
-                        Rectangle {
-                            width: (parent.width - parent.spacing * 2) / 3
-                            height: parent.height
-                            radius: 12
-                            color: theme.subtleButton
+                        StatusCell {
+                            title: "Memory"
+                            value: root.percentText(root.memoryUsage)
+                            percent: root.memoryUsage
+                            tone: theme.success
+                        }
 
-                            Text {
-                                anchors.fill: parent
-                                anchors.leftMargin: 12
-                                anchors.rightMargin: 12
+                        StatusCell {
+                            title: "Battery"
+                            value: root.batteryValue()
+                            percent: root.batteryPercent
+                            tone: root.batteryPercent >= 0 && root.batteryPercent < 20 ? theme.danger : theme.success
+                        }
 
-                                text: "MEM " + root.memoryUsage + "%"
-                                color: root.fg
-                                font.pixelSize: 14
-                                font.bold: true
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                                elide: Text.ElideRight
-                            }
+                        StatusCell {
+                            title: "Volume"
+                            value: root.volumeValue()
+                            percent: root.volumeMuted ? 0 : root.volumePercent
+                            tone: theme.info
+                        }
+
+                        StatusCell {
+                            title: "Brightness"
+                            value: root.percentText(root.brightnessPercent)
+                            percent: root.brightnessPercent
+                            tone: root.accent
                         }
                     }
 
@@ -460,7 +656,7 @@ Scope {
                         id: list
 
                         width: parent.width
-                        height: parent.height - 140
+                        height: parent.height - 192
                         clip: true
                         visible: root.filteredApps.length > 0
 

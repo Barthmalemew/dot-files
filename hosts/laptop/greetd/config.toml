@@ -1,0 +1,10 @@
+[terminal]
+vt = 7
+
+[initial_session]
+command = "dbus-run-session mango"
+user = "barthmalemew"
+
+[default_session]
+command = "agreety --cmd 'dbus-run-session mango'"
+user = "greetd"

@@ -1,0 +1,15 @@
+#!/sbin/openrc-run
+
+description="greetd login manager"
+command="/usr/bin/greetd"
+command_args="${greetd_args:-}"
+command_background="yes"
+pidfile="/run/greetd.pid"
+output_log="/var/log/greetd.log"
+error_log="/var/log/greetd.log"
+
+depend() {
+  need localmount
+  use dbus elogind
+  after bootmisc
+}

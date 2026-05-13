@@ -7,10 +7,11 @@ The main entrypoint is `setup.sh`.
 
 ## Layout
 
-- `dotfiles/`: shared user config copied from this desktop.
+- `dotfiles/`: shared user config.
 - `packages/common.txt`: shared package atoms captured from this desktop.
 - `packages/ladmin.txt`: desktop-only package additions.
-- `packages/laptop.txt`: future laptop-only package additions.
+- `packages/laptop.txt`: laptop-only package additions required by the
+  ThinkPad X9-14 Gen 1 hardware/profile.
 - `portage/common/`: shared Portage snippets.
 - `portage/hosts/<host>/`: host-specific Portage notes/examples.
 - `openrc/hosts/<host>/services.txt`: OpenRC service/runlevel pairs.
@@ -32,10 +33,16 @@ The main entrypoint is `setup.sh`.
 ./setup.sh --host ladmin --apply-dotfiles
 ./setup.sh --host ladmin --apply-portage
 ./setup.sh --host ladmin --apply-openrc
+./setup.sh --install-ble-sh
 ```
 
-The laptop starts from the desktop OpenRC list and can add laptop-only packages,
-firmware, Quickshell pieces, and host-specific Portage config later.
+Use `./setup.sh --host laptop ...` for the ThinkPad X9-14 Gen 1 profile. The
+laptop README records which differences are hardware-required and which parts
+should stay shared with desktop.
+
+`ble.sh` is installed separately because it is user-local shell state, not a
+Portage package on this system. The installer places it under
+`~/.local/share/blesh/ble.sh`, matching the `.bashrc` hook.
 
 ## Exclusions
 

@@ -1,3 +1,10 @@
-# Laptop-only additions go here after the laptop hardware is known.
-# Likely categories: extra firmware, laptop-specific Quickshell helpers,
-# power management, input, suspend/resume, and hardware monitoring tools.
+net-wireless/bluez
+media-plugins/alsa-plugins
+media-sound/alsa-utils
+sys-firmware/sof-firmware
+sys-apps/lm-sensors
+sys-apps/smartmontools
+app-misc/brightnessctl
+sys-power/powertop
+sys-power/tlp
+sys-power/upower

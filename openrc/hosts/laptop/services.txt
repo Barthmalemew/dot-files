@@ -3,6 +3,7 @@ binfmt boot
 bootmisc boot
 cgroups sysinit
 chronyd default
+bluetooth default
 dbus default
 devfs sysinit
 dmesg sysinit
@@ -31,6 +32,7 @@ swap boot
 sysctl boot
 sysfs sysinit
 sysklogd default
+tlp default
 systemd-tmpfiles-setup boot
 systemd-tmpfiles-setup-dev sysinit
 termencoding boot

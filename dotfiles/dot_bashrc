@@ -18,4 +18,6 @@ fi
 # Put your fun stuff here.
 alias sudo='sudo '
 alias vim='NVIM_APPNAME=nvim-lite nvim'
-source -- ~/.local/share/blesh/ble.sh
+if [ -r "$HOME/.local/share/blesh/ble.sh" ]; then
+	source -- "$HOME/.local/share/blesh/ble.sh"
+fi

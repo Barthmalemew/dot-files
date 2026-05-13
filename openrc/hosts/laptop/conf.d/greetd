@@ -1,0 +1,2 @@
+# Extra arguments passed to /usr/bin/greetd.
+greetd_args=""

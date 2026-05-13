@@ -9,12 +9,14 @@ install_packages=0
 apply_dotfiles=0
 apply_portage=0
 apply_openrc=0
+install_ble_sh=0
 
 usage() {
   cat <<'EOF'
 Usage: ./setup.sh [--host HOST] [--check] [--dry-run]
                   [--install-packages] [--apply-dotfiles]
                   [--apply-portage] [--apply-openrc]
+                  [--install-ble-sh]
 
 Default behavior with no action flags is --check.
 EOF
@@ -50,6 +52,10 @@ while [ "$#" -gt 0 ]; do
       apply_openrc=1
       shift
       ;;
+    --install-ble-sh)
+      install_ble_sh=1
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -66,7 +72,8 @@ if [ "$check" -eq 0 ] &&
    [ "$install_packages" -eq 0 ] &&
    [ "$apply_dotfiles" -eq 0 ] &&
    [ "$apply_portage" -eq 0 ] &&
-   [ "$apply_openrc" -eq 0 ]; then
+   [ "$apply_openrc" -eq 0 ] &&
+   [ "$install_ble_sh" -eq 0 ]; then
   check=1
 fi
 
@@ -176,6 +183,35 @@ run_dotfile_step() {
   echo "Backups, if any, are in $backup_dir"
 }
 
+run_ble_sh_step() {
+  local target="$HOME/.local/share/blesh/ble.sh"
+  local repo_url="https://github.com/akinomyoga/ble.sh.git"
+
+  if [ -r "$target" ]; then
+    echo "ble.sh already installed at $target"
+    return
+  fi
+
+  if [ "$dry_run" -eq 1 ]; then
+    echo "Would install ble.sh to $target"
+    echo "Would run:"
+    echo "  git clone --recursive --depth 1 --shallow-submodules $repo_url TMPDIR/ble.sh"
+    echo "  make -C TMPDIR/ble.sh install PREFIX=$HOME/.local"
+    return
+  fi
+
+  command -v git >/dev/null || { echo "git is required to install ble.sh" >&2; exit 1; }
+  command -v make >/dev/null || { echo "make is required to install ble.sh" >&2; exit 1; }
+
+  local work_dir
+  work_dir="$(mktemp -d)"
+  trap "rm -rf '$work_dir'" EXIT
+
+  git clone --recursive --depth 1 --shallow-submodules "$repo_url" "$work_dir/ble.sh"
+  make -C "$work_dir/ble.sh" install PREFIX="$HOME/.local"
+  echo "Installed ble.sh to $target"
+}
+
 copy_tree() {
   local src="$1"
   local dest="$2"
@@ -184,7 +220,15 @@ copy_tree() {
   fi
   if [ "$dry_run" -eq 1 ]; then
     echo "Would copy $src to $dest"
-    diff -ruN "$dest" "$src" || true
+    find "$src" -type f | sort | while IFS= read -r file; do
+      local rel="${file#$src/}"
+      local target="$dest/$rel"
+      if [ -e "$target" ]; then
+        diff -u "$target" "$file" || true
+      else
+        diff -u /dev/null "$file" || true
+      fi
+    done
   else
     mkdir -p "$dest"
     cp -a "$src"/. "$dest"/
@@ -200,6 +244,12 @@ run_portage_step() {
   copy_tree "$repo_dir/portage/common/repos.conf" /etc/portage/repos.conf
   copy_tree "$repo_dir/portage/common/binrepos.conf" /etc/portage/binrepos.conf
   copy_tree "$repo_dir/portage/common/env" /etc/portage/env
+  copy_tree "$repo_dir/portage/hosts/$host/package.use" /etc/portage/package.use
+  copy_tree "$repo_dir/portage/hosts/$host/package.accept_keywords" /etc/portage/package.accept_keywords
+  copy_tree "$repo_dir/portage/hosts/$host/package.license" /etc/portage/package.license
+  copy_tree "$repo_dir/portage/hosts/$host/repos.conf" /etc/portage/repos.conf
+  copy_tree "$repo_dir/portage/hosts/$host/binrepos.conf" /etc/portage/binrepos.conf
+  copy_tree "$repo_dir/portage/hosts/$host/env" /etc/portage/env
 
   if [ -f "$repo_dir/portage/common/package.env" ]; then
     if [ "$dry_run" -eq 1 ]; then
@@ -209,6 +259,34 @@ run_portage_step() {
       cp -a "$repo_dir/portage/common/package.env" /etc/portage/package.env
     fi
   fi
+
+  if [ -f "$repo_dir/portage/hosts/$host/package.env" ]; then
+    if [ "$dry_run" -eq 1 ]; then
+      echo "Would copy portage/hosts/$host/package.env to /etc/portage/package.env"
+      diff -u /etc/portage/package.env "$repo_dir/portage/hosts/$host/package.env" || true
+    else
+      cp -a "$repo_dir/portage/hosts/$host/package.env" /etc/portage/package.env
+    fi
+  fi
+}
+
+install_host_file() {
+  local src="$1"
+  local dest="$2"
+  local mode="$3"
+  if [ ! -e "$src" ]; then
+    return
+  fi
+  if [ "$dry_run" -eq 1 ]; then
+    echo "Would install $src to $dest mode $mode"
+    if [ -e "$dest" ]; then
+      diff -u "$dest" "$src" || true
+    else
+      diff -u /dev/null "$src" || true
+    fi
+  else
+    install -D -m "$mode" "$src" "$dest"
+  fi
 }
 
 run_openrc_step() {
@@ -217,6 +295,22 @@ run_openrc_step() {
   need_host_file "$services_file"
 
   echo "OpenRC service changes for host '$host':"
+  if [ -d "$repo_dir/openrc/hosts/$host/init.d" ]; then
+    find "$repo_dir/openrc/hosts/$host/init.d" -type f | sort | while IFS= read -r src; do
+      install_host_file "$src" "/etc/init.d/${src##*/}" 755
+    done
+  fi
+  if [ -d "$repo_dir/openrc/hosts/$host/conf.d" ]; then
+    find "$repo_dir/openrc/hosts/$host/conf.d" -type f | sort | while IFS= read -r src; do
+      install_host_file "$src" "/etc/conf.d/${src##*/}" 644
+    done
+  fi
+  if [ -d "$repo_dir/hosts/$host/greetd" ]; then
+    find "$repo_dir/hosts/$host/greetd" -type f | sort | while IFS= read -r src; do
+      install_host_file "$src" "/etc/greetd/${src##*/}" 644
+    done
+  fi
+
   while read -r service runlevel; do
     [ -z "${service:-}" ] && continue
     case "$service" in \#*) continue ;; esac
@@ -258,4 +352,8 @@ fi
 
 if [ "$apply_openrc" -eq 1 ]; then
   run_openrc_step
+fi
+
+if [ "$install_ble_sh" -eq 1 ]; then
+  run_ble_sh_step
 fi

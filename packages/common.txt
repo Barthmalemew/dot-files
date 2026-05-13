@@ -26,6 +26,7 @@ lxqt-base/lxqt-policykit
 media-fonts/ibm-plex
 media-sound/pavucontrol
 media-video/pipewire
+media-video/wireplumber
 net-libs/nodejs
 net-misc/chrony
 net-misc/curl
