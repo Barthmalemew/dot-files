@@ -1,0 +1,2 @@
+bluetooth default
+laptop-power-profile default

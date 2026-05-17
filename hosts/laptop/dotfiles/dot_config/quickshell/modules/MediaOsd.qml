@@ -7,8 +7,8 @@ Scope {
     Theme { id: theme }
 
     property bool osdVisible: false
-    property string title: "Night mode"
-    property string titleSymbol: "󰖔"
+    property string title: "Volume"
+    property string titleSymbol: "󰕾"
     property string valueText: "--%"
     property int percent: -1
     property color tone: theme.primary
@@ -19,6 +19,32 @@ Scope {
 
     function clampPercent(value) {
         return Math.max(0, Math.min(100, Math.round(Number(value))))
+    }
+
+    function show(titleText, symbolText, value, mutedState) {
+        title = titleText
+        titleSymbol = symbolText
+
+        if (mutedState) {
+            valueText = "Muted"
+            percent = 0
+            tone = theme.gray
+        } else {
+            percent = clampPercent(value)
+            valueText = percent + "%"
+            tone = titleText === "Brightness" ? theme.primary : theme.info
+        }
+
+        osdVisible = true
+        hideTimer.restart()
+    }
+
+    function showVolume(value, mutedState) {
+        show("Volume", mutedState ? "󰝟" : "󰕾", value, mutedState)
+    }
+
+    function showBrightness(value) {
+        show("Brightness", "󰃠", value, false)
     }
 
     function showNightMode(state) {

@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -16,8 +17,14 @@ Scope {
     property string clockText: ""
     property int cpuUsage: 0
     property int memoryUsage: 0
+    property int batteryPercent: -1
+    property string batteryState: ""
+    property int volumePercent: -1
+    property bool volumeMuted: false
+    property int brightnessPercent: -1
     property double previousCpuTotal: 0
     property double previousCpuIdle: 0
+    property string statusScript: Qt.resolvedUrl("../scripts/launcher-status.sh").toString().replace("file://", "")
 
     readonly property color accent: theme.primary
     readonly property color bg:     theme.panelBg
@@ -51,7 +58,7 @@ Scope {
             height: 28
 
             text: parent.symbol
-            color: parent.tone
+            color: root.muted
             font.family: "Symbols Nerd Font"
             font.pixelSize: 20
             horizontalAlignment: Text.AlignHCenter
@@ -329,8 +336,58 @@ Scope {
             memoryUsage = clampPercent((1 - memAvailable / memTotal) * 100)
     }
 
+    function parseSystemStatus(text) {
+        var lines = (text || "").split("\n")
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim()
+            var split = line.indexOf("=")
+
+            if (split < 0)
+                continue
+
+            var key = line.slice(0, split)
+            var value = line.slice(split + 1)
+
+            if (key === "BAT") {
+                batteryPercent = value === "" ? -1 : clampPercent(parseInt(value))
+            } else if (key === "BAT_STATE") {
+                batteryState = value
+            } else if (key === "VOL") {
+                volumePercent = value === "" ? -1 : clampPercent(parseInt(value))
+            } else if (key === "VOL_MUTED") {
+                volumeMuted = value === "1"
+            } else if (key === "BRI") {
+                brightnessPercent = value === "" ? -1 : clampPercent(parseInt(value))
+            }
+        }
+    }
+
     function percentText(value) {
         return value < 0 ? "--%" : value + "%"
+    }
+
+    function batteryValue() {
+        if (batteryPercent < 0)
+            return "AC"
+
+        if (batteryState === "fully-charged")
+            return "Full"
+
+        if (batteryState === "charging")
+            return percentText(batteryPercent) + " chg"
+
+        return percentText(batteryPercent)
+    }
+
+    function volumeValue() {
+        if (volumePercent < 0)
+            return "No sink"
+
+        if (volumeMuted)
+            return "Muted"
+
+        return percentText(volumePercent)
     }
 
     Component.onCompleted: {
@@ -364,6 +421,24 @@ Scope {
         }
     }
 
+    Process {
+        id: systemStatusPoller
+        command: ["sh", root.statusScript]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.parseSystemStatus(this.text)
+            }
+        }
+
+        stderr: StdioCollector {
+            onStreamFinished: {
+                if (this.text.trim() !== "")
+                    console.warn("launcher system status error:", this.text)
+            }
+        }
+    }
+
     Timer {
         interval: 1000
         running: true
@@ -382,6 +457,9 @@ Scope {
         onTriggered: {
             if (!statsPoller.running)
                 statsPoller.running = true
+
+            if (!systemStatusPoller.running)
+                systemStatusPoller.running = true
         }
     }
 
@@ -498,9 +576,9 @@ Scope {
 
                     Grid {
                         width: parent.width
-                        height: 60
+                        height: 132
                         columns: 3
-                        rows: 1
+                        rows: 2
                         spacing: 12
 
                         StatusCell {
@@ -524,6 +602,29 @@ Scope {
                             tone: theme.success
                         }
 
+                        StatusCell {
+                            symbol: "󰁹"
+                            title: "Battery"
+                            value: root.batteryValue()
+                            percent: root.batteryPercent
+                            tone: root.batteryPercent >= 0 && root.batteryPercent < 20 ? theme.danger : theme.success
+                        }
+
+                        StatusCell {
+                            symbol: root.volumeMuted ? "󰝟" : "󰕾"
+                            title: "Volume"
+                            value: root.volumeValue()
+                            percent: root.volumeMuted ? 0 : root.volumePercent
+                            tone: theme.info
+                        }
+
+                        StatusCell {
+                            symbol: "󰃠"
+                            title: "Brightness"
+                            value: root.percentText(root.brightnessPercent)
+                            percent: root.brightnessPercent
+                            tone: root.accent
+                        }
                     }
 
                     Rectangle {
@@ -638,7 +739,7 @@ Scope {
                         id: list
 
                         width: parent.width
-                        height: parent.height - 34 - 60 - 58 - 1 - parent.spacing * 4
+                        height: parent.height - 34 - 132 - 58 - 1 - parent.spacing * 4
                         clip: true
                         visible: root.filteredApps.length > 0
 
@@ -678,6 +779,12 @@ Scope {
 
                                 implicitSize: 34
                                 source: Quickshell.iconPath(modelData.app.icon, "application-x-executable")
+
+                                layer.enabled: true
+                                layer.effect: MultiEffect {
+                                    colorization: 1
+                                    colorizationColor: root.fg
+                                }
                             }
 
                             Text {

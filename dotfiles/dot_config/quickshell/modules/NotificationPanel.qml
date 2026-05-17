@@ -9,6 +9,7 @@ Scope {
     Theme { id: theme }
 
     property bool panelVisible: false
+    property bool panelRendered: false
 
     readonly property color accent: theme.primary
     readonly property color bg:     theme.panelBg
@@ -25,11 +26,14 @@ Scope {
     }
 
     function open() {
+        renderTimer.stop()
+        panelRendered = true
         panelVisible = true
     }
 
     function close() {
         panelVisible = false
+        renderTimer.restart()
     }
 
     function dismissAll() {
@@ -53,6 +57,15 @@ Scope {
         }
     }
 
+    Timer {
+        id: renderTimer
+
+        interval: 280
+        repeat: false
+
+        onTriggered: root.panelRendered = false
+    }
+
     Variants {
         model: Quickshell.screens
 
@@ -61,6 +74,31 @@ Scope {
 
             readonly property bool isMainDisplay: Quickshell.screens.length > 0 && modelData.name === Quickshell.screens[0].name
 
+            screen: modelData
+            focusable: false
+            visible: isMainDisplay
+            color: "transparent"
+
+            anchors {
+                top: true
+                left: true
+            }
+
+            implicitWidth: 1
+            implicitHeight: 1
+
+            WlrLayershell.namespace: "quickshell-notifications-keepalive"
+            WlrLayershell.layer: WlrLayer.Background
+        }
+    }
+
+    Variants {
+        model: Quickshell.screens
+
+        delegate: PanelWindow {
+            required property var modelData
+
+            readonly property bool isMainDisplay: Quickshell.screens.length > 0 && modelData.name === Quickshell.screens[0].name
             screen: modelData
             focusable: true
 
@@ -72,7 +110,7 @@ Scope {
             }
 
             color: "transparent"
-            visible: isMainDisplay && (root.panelVisible || dim.opacity > 0.01 || panel.x > -panel.width - panel.sideMargin + 1)
+            visible: isMainDisplay && root.panelRendered
 
             WlrLayershell.namespace: "quickshell-notifications"
             WlrLayershell.layer: WlrLayer.Overlay
@@ -112,6 +150,7 @@ Scope {
 
                     MouseArea {
                         anchors.fill: parent
+                        enabled: root.panelVisible
 
                         onClicked: root.close()
                     }

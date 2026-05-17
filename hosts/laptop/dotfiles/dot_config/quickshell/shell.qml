@@ -67,6 +67,14 @@ Scope {
     IpcHandler {
         target: "osd"
 
+        function showVolume(value: string, muted: string) {
+            osd.showVolume(value, muted === "1" || muted === "true")
+        }
+
+        function showBrightness(value: string) {
+            osd.showBrightness(value)
+        }
+
         function showNightMode(state: string) {
             osd.showNightMode(state)
         }

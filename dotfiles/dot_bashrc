@@ -18,6 +18,14 @@ fi
 # Put your fun stuff here.
 alias sudo='sudo '
 alias vim='NVIM_APPNAME=nvim-lite nvim'
+
+if [ -r "${XDG_DATA_HOME:-$HOME/.local/share}/xelabash/xela.bash" ]; then
+	GIT_PROMPT=true
+	source -- "${XDG_DATA_HOME:-$HOME/.local/share}/xelabash/xela.bash"
+fi
+
 if [ -r "$HOME/.local/share/blesh/ble.sh" ]; then
 	source -- "$HOME/.local/share/blesh/ble.sh"
 fi
+
+export PATH="$HOME/.local/bin:$PATH"

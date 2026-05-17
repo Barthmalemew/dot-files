@@ -1,10 +1,13 @@
-net-wireless/bluez
+app-misc/brightnessctl
+media-libs/libcamera
+media-libs/libv4l
+media-libs/libva-intel-media-driver
 media-plugins/alsa-plugins
 media-sound/alsa-utils
-sys-firmware/sof-firmware
 sys-apps/lm-sensors
 sys-apps/smartmontools
-app-misc/brightnessctl
+sys-firmware/intel-microcode
+sys-firmware/sof-firmware
 sys-power/powertop
 sys-power/tlp
 sys-power/upower

@@ -1,0 +1,48 @@
+#!/bin/sh
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+led="/sys/class/leds/tpacpi::kbd_backlight"
+state_file="/home/barthmalemew/.local/state/keyboard-backlight/level"
+
+[ -d "$led" ] || exit 1
+
+max="$(cat "$led/max_brightness" 2>/dev/null || printf '2')"
+
+apply_level() {
+    level="$1"
+
+    case "$level" in
+        ''|*[!0-9]*)
+            echo "Invalid keyboard backlight level: $level" >&2
+            exit 2
+            ;;
+    esac
+
+    [ "$level" -le "$max" ] || level="$max"
+
+    printf '%s\n' none > "$led/trigger" 2>/dev/null || true
+    printf '%s\n' "$level" > "$led/brightness"
+    printf '%s\n' "$level"
+}
+
+case "${1:-restore}" in
+    set)
+        apply_level "${2:-0}"
+        ;;
+    restore)
+        if [ -r "$state_file" ]; then
+            read -r level < "$state_file"
+        else
+            level="$(cat "$led/brightness" 2>/dev/null || printf '0')"
+        fi
+        apply_level "$level"
+        ;;
+    status)
+        cat "$led/brightness"
+        ;;
+    *)
+        echo "Usage: $0 [set LEVEL|restore|status]" >&2
+        exit 2
+        ;;
+esac

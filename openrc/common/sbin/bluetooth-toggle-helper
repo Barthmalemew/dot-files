@@ -1,0 +1,122 @@
+#!/bin/sh
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+thinkpad_bluetooth="/proc/acpi/ibm/bluetooth"
+
+btctl() {
+    if command -v timeout >/dev/null 2>&1; then
+        timeout 4 bluetoothctl "$@"
+    else
+        bluetoothctl "$@"
+    fi
+}
+
+set_thinkpad_bluetooth() {
+    [ -w "$thinkpad_bluetooth" ] || return 0
+
+    case "$1" in
+        on) printf '%s\n' enable > "$thinkpad_bluetooth" ;;
+        off) printf '%s\n' disable > "$thinkpad_bluetooth" ;;
+    esac
+}
+
+service_start() {
+    rc-service bluetooth start >/dev/null 2>&1 || true
+}
+
+service_stop() {
+    rc-service bluetooth stop >/dev/null 2>&1 || true
+}
+
+is_on() {
+    rfkill list bluetooth 2>/dev/null | grep -q 'Soft blocked: no' || return 1
+    btctl show 2>/dev/null | grep -q 'Powered: yes'
+}
+
+is_blocked() {
+    rfkill list bluetooth 2>/dev/null | grep -q 'Soft blocked: no' && return 1
+    return 0
+}
+
+wait_for_on() {
+    count=0
+
+    while [ "$count" -lt 8 ]; do
+        if is_on; then
+            return 0
+        fi
+
+        sleep 0.5
+        count=$((count + 1))
+    done
+
+    return 1
+}
+
+turn_on() {
+    set_thinkpad_bluetooth on
+    sleep 0.3
+    rfkill unblock bluetooth >/dev/null 2>&1 || true
+    service_start
+    btctl power on >/dev/null 2>&1 || true
+    rfkill unblock bluetooth >/dev/null 2>&1 || true
+
+    if wait_for_on; then
+        printf '%s\n' on
+    else
+        printf '%s\n' failed
+        exit 1
+    fi
+}
+
+turn_off() {
+    rfkill block bluetooth >/dev/null 2>&1 || true
+    set_thinkpad_bluetooth off
+    service_stop
+
+    if is_blocked; then
+        printf '%s\n' off
+    elif is_on; then
+        printf '%s\n' failed
+        exit 1
+    else
+        printf '%s\n' off
+    fi
+}
+
+status() {
+    if ! command -v rfkill >/dev/null 2>&1; then
+        printf '%s\n' missing
+        exit 1
+    fi
+
+    if is_on; then
+        printf '%s\n' on
+    else
+        printf '%s\n' off
+    fi
+}
+
+case "${1:-toggle}" in
+    on)
+        turn_on
+        ;;
+    off)
+        turn_off
+        ;;
+    toggle)
+        if is_on; then
+            turn_off
+        else
+            turn_on
+        fi
+        ;;
+    status)
+        status
+        ;;
+    *)
+        echo "Usage: $0 [on|off|toggle|status]" >&2
+        exit 2
+        ;;
+esac
