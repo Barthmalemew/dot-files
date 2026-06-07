@@ -15,11 +15,13 @@ install_ble_sh=0
 usage() {
   cat <<'EOF'
 Usage: ./setup.sh [--host HOST] [--check] [--dry-run]
+                  [--apply]
                   [--install-packages] [--apply-dotfiles]
                   [--apply-portage] [--apply-openrc]
                   [--install-ble-sh]
 
-Default behavior with no action flags is --check.
+  --apply         Apply dotfiles, portage, openrc, and ble.sh in one shot.
+  Default behavior with no action flags is --check.
 EOF
 }
 
@@ -57,6 +59,13 @@ while [ "$#" -gt 0 ]; do
       install_ble_sh=1
       shift
       ;;
+    --apply)
+      apply_dotfiles=1
+      apply_portage=1
+      apply_openrc=1
+      install_ble_sh=1
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -90,7 +99,8 @@ detect_host() {
 if [ -n "$host_arg" ]; then
   host="$host_arg"
 else
-  host="$(detect_host)"
+  echo "Error: --host is required. Use --host laptop or --host ladmin." >&2
+  exit 1
 fi
 
 if [ "$check" -eq 0 ] &&
@@ -377,6 +387,8 @@ run_portage_step() {
       cp -a "$repo_dir/portage/hosts/$host/package.env" /etc/portage/package.env
     fi
   fi
+
+  install_host_file "$repo_dir/portage/hosts/$host/make.conf" /etc/portage/make.conf 644
 }
 
 install_host_file() {
@@ -448,6 +460,16 @@ run_openrc_step() {
   if [ -d "$repo_dir/openrc/hosts/$host/elogind/system-sleep" ]; then
     find "$repo_dir/openrc/hosts/$host/elogind/system-sleep" -type f | sort | while IFS= read -r src; do
       install_host_file "$src" "/etc/elogind/system-sleep/${src##*/}" 755
+    done
+  fi
+  if [ -d "$repo_dir/dracut/common" ]; then
+    find "$repo_dir/dracut/common" -type f | sort | while IFS= read -r src; do
+      install_host_file "$src" "/etc/dracut.conf.d/${src##*/}" 644
+    done
+  fi
+  if [ -d "$repo_dir/dracut/hosts/$host" ]; then
+    find "$repo_dir/dracut/hosts/$host" -type f | sort | while IFS= read -r src; do
+      install_host_file "$src" "/etc/dracut.conf.d/${src##*/}" 644
     done
   fi
 
