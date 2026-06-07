@@ -1,11 +1,13 @@
 NetworkManager default
 binfmt boot
+bluetooth default
 bootmisc boot
 cgroups sysinit
 chronyd default
 dbus default
 devfs sysinit
 dmesg sysinit
+elogind default
 fsck boot
 greetd default
 hostname boot
