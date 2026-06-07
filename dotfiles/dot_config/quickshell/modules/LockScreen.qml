@@ -14,7 +14,7 @@ Scope {
     property string clockText: ""
     property string dateText: ""
     property bool statusIsError: false
-    readonly property string lockImage: ""
+    readonly property string lockImage: "file://" + Quickshell.env("HOME") + "/Pictures/Wallpaper.jpeg"
 
     readonly property color accent: theme.primary
     readonly property color bg:     theme.bg0
