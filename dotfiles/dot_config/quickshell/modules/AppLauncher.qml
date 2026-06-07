@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -35,7 +36,7 @@ Scope {
         property color tone: root.accent
 
         width: (parent.width - parent.spacing * 2) / 3
-        height: (parent.height - parent.spacing) / 2
+        height: parent.height
         radius: theme.radiusSm
         color: root.bg2
         border.width: 1
@@ -678,6 +679,12 @@ Scope {
 
                                 implicitSize: 34
                                 source: Quickshell.iconPath(modelData.app.icon, "application-x-executable")
+
+                                layer.enabled: true
+                                layer.effect: MultiEffect {
+                                    colorization: 1
+                                    colorizationColor: root.fg
+                                }
                             }
 
                             Text {

@@ -11,16 +11,15 @@ apply_dotfiles=0
 apply_portage=0
 apply_openrc=0
 install_ble_sh=0
+install_xelabash=0
 
 usage() {
   cat <<'EOF'
-Usage: ./setup.sh [--host HOST] [--check] [--dry-run]
-                  [--apply]
+Usage: ./setup.sh --host HOST [--check] [--dry-run]
                   [--install-packages] [--apply-dotfiles]
                   [--apply-portage] [--apply-openrc]
-                  [--install-ble-sh]
+                  [--install-ble-sh] [--install-xelabash]
 
-  --apply         Apply dotfiles, portage, openrc, and ble.sh in one shot.
   Default behavior with no action flags is --check.
 EOF
 }
@@ -59,11 +58,8 @@ while [ "$#" -gt 0 ]; do
       install_ble_sh=1
       shift
       ;;
-    --apply)
-      apply_dotfiles=1
-      apply_portage=1
-      apply_openrc=1
-      install_ble_sh=1
+    --install-xelabash)
+      install_xelabash=1
       shift
       ;;
     -h|--help)
@@ -108,7 +104,8 @@ if [ "$check" -eq 0 ] &&
    [ "$apply_dotfiles" -eq 0 ] &&
    [ "$apply_portage" -eq 0 ] &&
    [ "$apply_openrc" -eq 0 ] &&
-   [ "$install_ble_sh" -eq 0 ]; then
+   [ "$install_ble_sh" -eq 0 ] &&
+   [ "$install_xelabash" -eq 0 ]; then
   check=1
 fi
 
@@ -302,6 +299,39 @@ run_dotfile_step() {
   echo "Backups, if any, are in $backup_dir"
 }
 
+run_xelabash_step() {
+  local target="$HOME/.local/share/xelabash"
+  local repo_url="https://github.com/aelindeman/xelabash.git"
+
+  if [ -d "$target/.git" ]; then
+    echo "xelabash already installed at $target"
+    return
+  fi
+
+  if [ "$dry_run" -eq 1 ]; then
+    echo "Would install xelabash to $target"
+    return
+  fi
+
+  command -v git >/dev/null || { echo "git is required to install xelabash" >&2; exit 1; }
+
+  local work_dir
+  work_dir="$(mktemp -d)"
+  trap "rm -rf '$work_dir'" EXIT
+
+  git clone --depth 1 "$repo_url" "$work_dir/xelabash"
+  mkdir -p "$target"
+  find "$work_dir/xelabash" -not -path '*/.git*' -type f | while IFS= read -r f; do
+    rel="${f#$work_dir/xelabash/}"
+    if [ ! -e "$target/$rel" ]; then
+      mkdir -p "$(dirname "$target/$rel")"
+      cp "$f" "$target/$rel"
+    fi
+  done
+  cp -r "$work_dir/xelabash/.git" "$target/.git"
+  echo "Installed xelabash to $target"
+}
+
 run_ble_sh_step() {
   local target="$HOME/.local/share/blesh/ble.sh"
   local repo_url="https://github.com/akinomyoga/ble.sh.git"
@@ -427,6 +457,11 @@ run_openrc_step() {
       install_host_file "$src" "/usr/share/polkit-1/actions/${src##*/}" 644
     done
   fi
+  if [ -d "$repo_dir/openrc/common/polkit-1/rules.d" ]; then
+    find "$repo_dir/openrc/common/polkit-1/rules.d" -type f | sort | while IFS= read -r src; do
+      install_host_file "$src" "/etc/polkit-1/rules.d/${src##*/}" 644
+    done
+  fi
   if [ -d "$repo_dir/openrc/hosts/$host/init.d" ]; then
     find "$repo_dir/openrc/hosts/$host/init.d" -type f | sort | while IFS= read -r src; do
       install_host_file "$src" "/etc/init.d/${src##*/}" 755
@@ -538,4 +573,8 @@ fi
 
 if [ "$install_ble_sh" -eq 1 ]; then
   run_ble_sh_step
+fi
+
+if [ "$install_xelabash" -eq 1 ]; then
+  run_xelabash_step
 fi
