@@ -468,6 +468,11 @@ run_openrc_step() {
       install_host_file "$src" "/etc/polkit-1/rules.d/${src##*/}" 644
     done
   fi
+  if [ -d "$repo_dir/openrc/common/pam.d" ]; then
+    find "$repo_dir/openrc/common/pam.d" -type f | sort | while IFS= read -r src; do
+      install_host_file "$src" "/etc/pam.d/${src##*/}" 644
+    done
+  fi
   if [ -d "$repo_dir/openrc/hosts/$host/init.d" ]; then
     find "$repo_dir/openrc/hosts/$host/init.d" -type f | sort | while IFS= read -r src; do
       install_host_file "$src" "/etc/init.d/${src##*/}" 755
