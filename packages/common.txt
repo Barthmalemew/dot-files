@@ -10,6 +10,7 @@ app-text/texlive
 dev-lang/python
 dev-util/tree-sitter-cli
 dev-vcs/git
+gnome-base/gnome-keyring
 gnome-base/gvfs
 gui-apps/grim
 gui-apps/qt6ct
