@@ -179,12 +179,12 @@ run_remove_package_step() {
 
   if [ "$dry_run" -eq 1 ]; then
     echo "Would run:"
-    echo "  emerge --pretend --unmerge $atoms"
-    emerge --pretend --unmerge $atoms
+    echo "  emerge --pretend --depclean $atoms"
+    emerge --pretend --depclean $atoms
   else
     need_root_for_apply "Package removal"
-    echo "Unmerging for host '$host': $atoms"
-    emerge --ask --unmerge $atoms
+    echo "Depcleaning for host '$host': $atoms"
+    emerge --ask --depclean $atoms
   fi
 }
 
