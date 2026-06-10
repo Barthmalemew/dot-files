@@ -12,6 +12,7 @@ apply_portage=0
 apply_openrc=0
 install_ble_sh=0
 install_xelabash=0
+fix_machine_id=0
 
 usage() {
   cat <<'EOF'
@@ -19,6 +20,7 @@ Usage: ./setup.sh --host HOST [--check] [--dry-run]
                   [--install-packages] [--apply-dotfiles]
                   [--apply-portage] [--apply-openrc]
                   [--install-ble-sh] [--install-xelabash]
+                  [--fix-machine-id]
 
   Default behavior with no action flags is --check.
 EOF
@@ -60,6 +62,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --install-xelabash)
       install_xelabash=1
+      shift
+      ;;
+    --fix-machine-id)
+      fix_machine_id=1
       shift
       ;;
     -h|--help)
@@ -550,10 +556,19 @@ check_machine_id() {
   id="$(cat /etc/machine-id 2>/dev/null || true)"
   if [ -z "$id" ] || [ "${#id}" -ne 32 ]; then
     echo "WARNING: /etc/machine-id is missing or invalid."
-    echo "  Fix: sudo sh -c 'uuidgen | tr -d \"-\" > /etc/machine-id && chmod 444 /etc/machine-id'"
+    echo "  Fix: sudo ./setup.sh --host $host --fix-machine-id"
   else
     echo "machine-id: $id (ok)"
   fi
+}
+
+run_fix_machine_id_step() {
+  need_root_for_apply "fix-machine-id"
+  local new_id
+  new_id="$(uuidgen | tr -d '-')"
+  printf '%s\n' "$new_id" > /etc/machine-id
+  chmod 444 /etc/machine-id
+  echo "machine-id set to $new_id"
 }
 
 if [ "$check" -eq 1 ]; then
@@ -589,4 +604,8 @@ fi
 
 if [ "$install_xelabash" -eq 1 ]; then
   run_xelabash_step
+fi
+
+if [ "$fix_machine_id" -eq 1 ]; then
+  run_fix_machine_id_step
 fi
