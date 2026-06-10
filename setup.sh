@@ -13,12 +13,13 @@ apply_openrc=0
 install_ble_sh=0
 install_xelabash=0
 fix_machine_id=0
+remove_packages=0
 
 usage() {
   cat <<'EOF'
 Usage: ./setup.sh --host HOST [--check] [--dry-run]
-                  [--install-packages] [--apply-dotfiles]
-                  [--apply-portage] [--apply-openrc]
+                  [--install-packages] [--remove-packages]
+                  [--apply-dotfiles] [--apply-portage] [--apply-openrc]
                   [--install-ble-sh] [--install-xelabash]
                   [--fix-machine-id]
 
@@ -42,6 +43,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --install-packages)
       install_packages=1
+      shift
+      ;;
+    --remove-packages)
+      remove_packages=1
       shift
       ;;
     --apply-dotfiles)
@@ -141,6 +146,46 @@ package_atoms() {
   package_files | while IFS= read -r file; do
     sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "$file"
   done | sort -u
+}
+
+remove_files() {
+  [ -s "$repo_dir/packages/remove.txt" ] && printf '%s\n' "$repo_dir/packages/remove.txt"
+  [ -s "$repo_dir/packages/hosts/$host/remove.txt" ] && printf '%s\n' "$repo_dir/packages/hosts/$host/remove.txt"
+  return 0
+}
+
+remove_atoms() {
+  remove_files | while IFS= read -r file; do
+    sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "$file"
+  done | sort -u
+}
+
+installed_remove_atoms() {
+  remove_atoms | while IFS= read -r atom; do
+    [ -z "$atom" ] && continue
+    if portageq has_version / "$atom" >/dev/null 2>&1; then
+      printf '%s\n' "$atom"
+    fi
+  done
+}
+
+run_remove_package_step() {
+  local atoms
+  atoms="$(installed_remove_atoms | tr '\n' ' ')"
+  if [ -z "${atoms// }" ]; then
+    echo "No packages to remove for host '$host'."
+    return
+  fi
+
+  if [ "$dry_run" -eq 1 ]; then
+    echo "Would run:"
+    echo "  emerge --pretend --unmerge $atoms"
+    emerge --pretend --unmerge $atoms
+  else
+    need_root_for_apply "Package removal"
+    echo "Unmerging for host '$host': $atoms"
+    emerge --ask --unmerge $atoms
+  fi
 }
 
 print_packages() {
@@ -589,6 +634,10 @@ fi
 
 if [ "$install_packages" -eq 1 ]; then
   run_package_step
+fi
+
+if [ "$remove_packages" -eq 1 ]; then
+  run_remove_package_step
 fi
 
 if [ "$apply_dotfiles" -eq 1 ]; then
