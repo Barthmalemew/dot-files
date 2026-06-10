@@ -545,7 +545,19 @@ run_openrc_step() {
   fi
 }
 
+check_machine_id() {
+  local id
+  id="$(cat /etc/machine-id 2>/dev/null || true)"
+  if [ -z "$id" ] || [ "${#id}" -ne 32 ]; then
+    echo "WARNING: /etc/machine-id is missing or invalid."
+    echo "  Fix: sudo sh -c 'uuidgen | tr -d \"-\" > /etc/machine-id && chmod 444 /etc/machine-id'"
+  else
+    echo "machine-id: $id (ok)"
+  fi
+}
+
 if [ "$check" -eq 1 ]; then
+  check_machine_id
   print_packages
   show_dotfile_plan
   previous_dry_run="$dry_run"
