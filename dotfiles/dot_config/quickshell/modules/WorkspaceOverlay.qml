@@ -113,50 +113,6 @@ Scope {
         return ""
     }
 
-    function parseTagLine(parts) {
-        let offset = -1
-        let monitor = ""
-
-        for (let i = 0; i < parts.length; i++) {
-            if (parts[i] === "tag") {
-                offset = i
-                break
-            }
-        }
-
-        if (offset < 0 || parts.length < offset + 5)
-            return null
-
-        const id = parseInt(parts[offset + 1])
-
-        if (isNaN(id) || id < 1 || id > 9)
-            return null
-
-        if (offset > 0)
-            monitor = parts[offset - 1]
-        else
-            monitor = root.monitorForTag(id)
-
-        const minTag = root.monitorMinTag(monitor)
-        const maxTag = root.monitorMaxTag(monitor)
-
-        if (id < minTag || id > maxTag)
-            return null
-
-        const state = parseInt(parts[offset + 2]) || 0
-        const clients = parseInt(parts[offset + 3]) || 0
-        const focused = parseInt(parts[offset + 4]) || 0
-        const isActive = state === 1
-
-        return {
-            monitor: monitor,
-            id: id,
-            occupied: clients > 0,
-            focused: isActive || focused === 1,
-            active: isActive
-        }
-    }
-
     Timer {
         id: hideTimer
         interval: dimTimer.interval
@@ -179,7 +135,7 @@ Scope {
 
     Process {
         id: poller
-        command: ["mmsg", "-g", "-t"]
+        command: ["mmsg", "get", "all-tags"]
 
         stdout: StdioCollector {
             onStreamFinished: {
@@ -208,35 +164,48 @@ Scope {
     }
 
     function parseBlock(block) {
+        let data
+        try {
+            data = JSON.parse(block)
+        } catch (e) {
+            return
+        }
+
+        if (!data || !data.all_tags)
+            return
+
         const nextByMonitor = {}
         const nextActiveByMonitor = {}
         let parsedTags = 0
 
-        const lines = (block || "").split("\n")
+        for (let m = 0; m < data.all_tags.length; m++) {
+            const entry = data.all_tags[m]
+            const monitor = entry.monitor
+            const tags = entry.tags || []
 
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim()
-            if (line.length === 0)
-                continue
+            const minTag = root.monitorMinTag(monitor)
+            const maxTag = root.monitorMaxTag(monitor)
 
-            const p = line.split(/\s+/)
-            const tag = root.parseTagLine(p)
+            for (let i = 0; i < tags.length; i++) {
+                const t = tags[i]
+                const id = t.index
 
-            if (tag === null)
-                continue
+                if (isNaN(id) || id < minTag || id > maxTag)
+                    continue
 
-            parsedTags += 1
+                parsedTags += 1
 
-            if (!nextByMonitor[tag.monitor])
-                nextByMonitor[tag.monitor] = {}
+                if (!nextByMonitor[monitor])
+                    nextByMonitor[monitor] = {}
 
-            nextByMonitor[tag.monitor][tag.id] = {
-                occupied: tag.occupied,
-                focused: tag.focused
+                nextByMonitor[monitor][id] = {
+                    occupied: (t.client_count || 0) > 0,
+                    focused: t.is_active === true
+                }
+
+                if (t.is_active)
+                    nextActiveByMonitor[monitor] = id
             }
-
-            if (tag.active)
-                nextActiveByMonitor[tag.monitor] = tag.id
         }
 
         if (parsedTags === 0)

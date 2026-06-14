@@ -8,10 +8,10 @@ if [ -z "$tag" ]; then
 fi
 
 if [ -n "$monitor" ]; then
-    mmsg -s -d "viewcrossmon,$tag,$monitor" || exit $?
+    mmsg dispatch "viewcrossmon,$tag,$monitor" || exit $?
     qs ipc call workspaceOverlay show "$monitor" >/dev/null 2>&1 || true
 else
-    mmsg -s -d "view,$tag,0" || exit $?
+    mmsg dispatch "view,$tag,0" || exit $?
     qs ipc call workspaceOverlay showPrimary >/dev/null 2>&1 || true
 fi
 
